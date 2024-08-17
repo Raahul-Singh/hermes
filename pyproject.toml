@@ -11,5 +11,6 @@ dependencies = [
     "parfive",
     "astropy",
     "numpy",
-    "pandas"
+    "pandas",
+    "sdss_access"
 ]

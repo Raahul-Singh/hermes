@@ -10,6 +10,8 @@ TEST_QUERY_1k = """
 SELECT TOP 1000
     p.objID,
     p.run,
+    p.ra,
+    p.dec,
     p.rerun,
     p.camcol,
     p.field,
@@ -37,5 +39,5 @@ if __name__ == "__main__":
     sql_cl = SQLCL()
     df = sql_cl.query_database(TEST_QUERY_1k)
     sql_cl.logger.info(f"Query returned {df.shape[0]} rows")
-    df.to_csv(PATH / "test_query_1k.csv")
+    df.to_csv(PATH / "data/test_query_1k.csv")
     sql_cl.logger.info(f"Data saved to {PATH / 'data/test_query_1k.csv'}")

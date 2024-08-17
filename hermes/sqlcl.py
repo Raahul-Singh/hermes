@@ -22,7 +22,7 @@ class SQLCL:
 
     def __init__(
         self,
-        url="https://skyserver.sdss.org/dr12/en/tools/search/x_sql.aspx",
+        url="https://skyserver.sdss.org/dr16/en/tools/search/x_sql.aspx",  # Using DR16. Breaks on DR18 due to changes in the ASP interface. See if fix needed.
         output_format="csv",
         log_to_stdout=True,
     ):
