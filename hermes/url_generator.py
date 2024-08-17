@@ -39,9 +39,17 @@ def apply_jpeg_url_to_df(df, scale=0.396, height=40, width=40):
     return df
 
 
+def add_filename(df):
+    df["filename"] = df["fits_url"].apply(
+        lambda x: x.split("/")[-1][:-4]
+    )  # remove .bz2
+    return df
+
+
 if __name__ == "__main__":
     df = pd.read_csv("test_run/data/test_query_1k.csv", index_col=0)
     df = apply_fits_url_to_df(df)
     df = apply_jpeg_url_to_df(df)
+    df = add_filename(df)
     df.to_csv("test_run/data/test_query_1k_with_urls.csv", index=False)
     print(df.head())
