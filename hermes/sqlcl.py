@@ -1,109 +1,95 @@
-#!/usr/bin/python2
-""">> sqlcl << command line query tool by Tamas Budavari <budavari@jhu.edu>
-Usage: sqlcl [options] sqlfile(s)
+#!/usr/bin/python3
+"""
+Inspired by the SQLCL tool by Tamas Budavari
+Modified by Raahul Singh to work with Python 3
+"""
 
-Options:
-        -s url	   : URL with the ASP interface (default: pha)
-        -f fmt     : set output format (html,xml,csv - default: csv)
-        -q query   : specify query on the command line
-        -l         : skip first line of output with column names
-        -v	   : verbose mode dumps settings in header
-        -h	   : show this message"""
+import argparse
+import io
+import os
+from io import StringIO
+from urllib.parse import urlencode
 
-formats = ['csv','xml','html']
+import pandas as pd
+import requests
 
-astro_url='http://skyserver.sdss3.org/public/en/tools/search/x_sql.aspx'
-public_url='http://skyserver.sdss3.org/public/en/tools/search/x_sql.aspx'
-
-default_url=public_url
-default_fmt='csv'
-
-def usage(status, msg=''):
-    "Error message and usage"
-    print __doc__
-    if msg:
-        print '-- ERROR: %s' % msg
-    sys.exit(status)
-
-def filtercomment(sql):
-    "Get rid of comments starting with --"
-    import os
-    fsql = ''
-    for line in sql.split('\n'):
-        fsql += line.split('--')[0] + ' ' + os.linesep;
-    return fsql
-
-def query(sql,url=default_url,fmt=default_fmt):
-    "Run query and return file object"
-    import urllib
-    fsql = filtercomment(sql)
-    params = urllib.urlencode({'cmd': fsql, 'format': fmt})
-    return urllib.urlopen(url+'?%s' % params)    
-
-def write_header(ofp,pre,url,qry):
-    import  time
-    ofp.write('%s SOURCE: %s\n' % (pre,url))
-    ofp.write('%s TIME: %s\n' % (pre,time.asctime()))    
-    ofp.write('%s QUERY:\n' % pre)
-    for l in qry.split('\n'):
-        ofp.write('%s   %s\n' % (pre,l))
-    
-def main(argv):
-    "Parse command line and do it..."
-    import os, getopt, string
-    
-    queries = []
-    url = os.getenv("SQLCLURL",default_url)
-    fmt = default_fmt
-    writefirst = 1
-    verbose = 0
-    
-    # Parse command line
-    try:
-        optlist, args = getopt.getopt(argv[1:],'s:f:q:vlh?')
-    except getopt.error, e:
-        usage(1,e)
-        
-    for o,a in optlist:
-        if   o=='-s': url = a
-        elif o=='-f': fmt = a
-        elif o=='-q': queries.append(a)
-        elif o=='-l': writefirst = 0
-        elif o=='-v': verbose += 1
-        else: usage(0)
-        
-    if fmt not in formats:
-        usage(1,'Wrong format!')
-
-    # Enqueue queries in files
-    for fname in args:
-        try:
-            queries.append(open(fname).read())
-        except IOError, e:
-            usage(1,e)
-
-    # Run all queries sequentially
-    for qry in queries:
-        ofp = sys.stdout
-        if verbose:
-            write_header(ofp,'#',url,qry)
-        file = query(qry,url,fmt)
-        # Output line by line (in case it's big)
-        line = file.readline()
-        if line.startswith("ERROR"): # SQL Statement Error -> stderr
-            ofp = sys.stderr
-        if writefirst:
-            ofp.write(string.rstrip(line)+os.linesep)
-        line = file.readline()
-        while line:
-            ofp.write(string.rstrip(line)+os.linesep)
-            line = file.readline()
+SUPPORTED_OUTPUT_FORMATS = ["html", "csv", "json"]
 
 
-if __name__=='__main__':
-    import sys
-    main(sys.argv)
+class SQLCL:
+    # TODO: Add support for running multiple queries in a single request
+
+    def __init__(
+        self,
+        url="https://skyserver.sdss.org/dr12/en/tools/search/x_sql.aspx",
+        output_format="csv",
+    ):
+        self.url = url
+        if output_format not in SUPPORTED_OUTPUT_FORMATS:
+            raise ValueError(
+                f"Invalid output format {output_format}. Supported formats are {SUPPORTED_OUTPUT_FORMAT}"
+            )
+        self.output_format = output_format
+
+    def filtercomment(self, sql):
+        """Get rid of comments starting with --"""
+        fsql = ""
+        for line in sql.split("\n"):
+            fsql += line.split("--")[0] + " " + os.linesep
+        return fsql
+
+    def query_database(self, query):
+        # URL-encode the query
+        query = self.filtercomment(query)
+        encoded_query = urlencode({"cmd": query, "format": self.output_format})
+
+        # Construct the full URL with the encoded query
+        full_url = f"{self.url}?{encoded_query}"
+
+        # Send a GET request to the provided URL
+        response = requests.get(full_url)
+
+        # Check if the request was successful
+        if response.status_code == 200:
+            # Attempt to parse the response as JSON
+            if self.output_format == "json":
+                return response.json()
+            # Attempt to parse the response as CSV
+            elif self.output_format == "csv":
+                urlData = response.content
+                return pd.read_csv(io.StringIO(urlData.decode("utf-8")), skiprows=1)
+                # return pd.read_csv(StringIO(response.text))
+            # Attempt to parse the response as HTML
+            elif self.output_format == "html":
+                return pd.read_html(StringIO(response.text))
+            else:
+                return {
+                    "error": "Failed to parse the response. Unsupported output format: {}".format(
+                        self.output_format
+                    )
+                }
+        else:
+            return {
+                "error": "Failed to query the database. Status code: {}".format(
+                    response.status_code
+                )
+            }
 
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="SQLCL command line query tool")
+    parser.add_argument(
+        "--url", type=str, help=f"URL with the ASP interface (default: {self.url})"
+    )
+    parser.add_argument(
+        "--format",
+        type=str,
+        choices=SUPPORTED_OUTPUT_FORMATS,
+        help=f"set output format such as {SUPPORTED_OUTPUT_FORMATS} (default: {self.output_format})",
+    )
+    parser.add_argument(
+        "--query", type=str, action="append", help="specify query on the command line"
+    )
 
-
+    args = parser.parse_args()
+    sqlcl = SQLCL(url=args.url, output_format=args.format)

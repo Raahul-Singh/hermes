@@ -9,5 +9,7 @@ description = "Utility to download SDSS data in parallel"
 authors = [{name = "Raahul Singh", email = "raahulsing002@gmail.com"}]
 dependencies = [
     "parfive",
-    "astropy"
+    "astropy",
+    "numpy",
+    "pandas"
 ]
