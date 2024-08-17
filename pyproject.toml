@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hermes"
+version = "0.0.1"
+description = "Utility to download SDSS data in parallel"
+authors = [{name = "Raahul Singh", email = "raahulsing002@gmail.com"}]
+dependencies = [
+    "parfive",
+    "astropy"
+]

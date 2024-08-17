@@ -1,2 +1,2 @@
-# SDSS-Downloader-Utility
-Utility to download SDSS data in parallel
+# Hermes
+WIP Utility to download SDSS data in parallel
