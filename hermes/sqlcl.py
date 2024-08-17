@@ -6,8 +6,9 @@ Modified by Raahul Singh to work with Python 3
 
 import argparse
 import io
+import logging
 import os
-from io import StringIO
+import sys
 from urllib.parse import urlencode
 
 import pandas as pd
@@ -23,6 +24,7 @@ class SQLCL:
         self,
         url="https://skyserver.sdss.org/dr12/en/tools/search/x_sql.aspx",
         output_format="csv",
+        log_to_stdout=True,
     ):
         self.url = url
         if output_format not in SUPPORTED_OUTPUT_FORMATS:
@@ -30,6 +32,11 @@ class SQLCL:
                 f"Invalid output format {output_format}. Supported formats are {SUPPORTED_OUTPUT_FORMAT}"
             )
         self.output_format = output_format
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
+        if log_to_stdout:
+            self.logger.addHandler(logging.StreamHandler(sys.stdout))
 
     def filtercomment(self, sql):
         """Get rid of comments starting with --"""
@@ -41,6 +48,7 @@ class SQLCL:
     def query_database(self, query):
         # URL-encode the query
         query = self.filtercomment(query)
+        self.logger.info(f"Querying the database with the following query: {query}")
         encoded_query = urlencode({"cmd": query, "format": self.output_format})
 
         # Construct the full URL with the encoded query
@@ -51,17 +59,12 @@ class SQLCL:
 
         # Check if the request was successful
         if response.status_code == 200:
-            # Attempt to parse the response as JSON
-            if self.output_format == "json":
-                return response.json()
+            self.logger.info("Query successful")
+            # TODO: Attempt to parse the response as JSON
             # Attempt to parse the response as CSV
-            elif self.output_format == "csv":
+            if self.output_format == "csv":
                 urlData = response.content
                 return pd.read_csv(io.StringIO(urlData.decode("utf-8")), skiprows=1)
-                # return pd.read_csv(StringIO(response.text))
-            # Attempt to parse the response as HTML
-            elif self.output_format == "html":
-                return pd.read_html(StringIO(response.text))
             else:
                 return {
                     "error": "Failed to parse the response. Unsupported output format: {}".format(
