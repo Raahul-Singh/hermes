@@ -1,5 +1,11 @@
+import pandas as pd
+from sdss_access import Path
+
+sdss_path = Path(release="dr17")
+
+
 def get_fits_url(run, rerun, camcol, field, filter_val="r"):
-    file_name = path.url(
+    file_name = sdss_path.url(
         "frame", run=run, rerun=rerun, camcol=camcol, field=field, filter=filter_val
     ).split("/")[-1]
     base_url = (
@@ -10,7 +16,7 @@ def get_fits_url(run, rerun, camcol, field, filter_val="r"):
 
 def apply_fits_url_to_df(df, filter_val="r"):
     df["fits_url"] = df.apply(
-        lambda row: get_frame_url(
+        lambda row: get_fits_url(
             row["run"], row["rerun"], row["camcol"], row["field"], filter_val
         ),
         axis=1,
@@ -31,3 +37,11 @@ def apply_jpeg_url_to_df(df, scale=0.396, height=40, width=40):
         axis=1,
     )
     return df
+
+
+if __name__ == "__main__":
+    df = pd.read_csv("test_run/data/test_query_1k.csv", index_col=0)
+    df = apply_fits_url_to_df(df)
+    df = apply_jpeg_url_to_df(df)
+    df.to_csv("test_run/data/test_query_1k_with_urls.csv", index=False)
+    print(df.head())
