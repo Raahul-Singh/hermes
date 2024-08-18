@@ -47,9 +47,9 @@ def add_filename(df):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("test_run/data/test_query_1k.csv", index_col=0)
+    df = pd.read_csv("test_run/data/test_query_1k_old.csv", index_col=0)
     df = apply_fits_url_to_df(df)
     df = apply_jpeg_url_to_df(df)
     df = add_filename(df)
-    df.to_csv("test_run/data/test_query_1k_with_urls.csv", index=False)
+    df.to_csv("test_run/data/test_query_1k_old.csv", index=False)
     print(df.head())
