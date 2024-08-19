@@ -15,7 +15,7 @@ def get_fits_url(run, rerun, camcol, field, filter_val="r"):
 
 
 def apply_fits_url_to_df(df, filter_val="r"):
-    df["fits_url"] = df.apply(
+    df[f"fits_url_{filter_val}"] = df.apply(
         lambda row: get_fits_url(
             row["run"], row["rerun"], row["camcol"], row["field"], filter_val
         ),
@@ -47,9 +47,10 @@ def add_filename(df):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("test_run/data/test_query_1k_old.csv", index_col=0)
-    df = apply_fits_url_to_df(df)
-    df = apply_jpeg_url_to_df(df)
-    df = add_filename(df)
-    df.to_csv("test_run/data/test_query_1k_old.csv", index=False)
+    df = pd.read_csv("test_run/data/initial_download.csv", index_col=0)
+    for i in ["u", "g", "r", "i", "z"]:
+        df = apply_fits_url_to_df(df, filter_val=i)
+    # df = apply_jpeg_url_to_df(df)
+    # df = add_filename(df)
+    df.to_csv("test_run/data/initial_download_updated.csv", index=False)
     print(df.head())
