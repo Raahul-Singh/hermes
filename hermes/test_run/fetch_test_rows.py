@@ -94,11 +94,32 @@ WHERE
     AND s.zWarning = 0  -- ensures reliable redshift measurements
     AND s.z BETWEEN 1 AND 6  -- example redshift range
 """
+JOEL_QUERY = """
+SELECT TOP 100000
+    p.objID,
+    p.run,
+    p.ra,
+    p.dec,
+    p.rerun,
+    p.camcol,
+    p.field,
+    s.z,
+    s.zErr,
+    s.rChi2
+FROM
+    PhotoObj AS p
+JOIN
+    SpecObj AS s ON p.objID = s.bestObjID
+WHERE
+    s.class_noqso = "GALAXY"
+    AND s.zWarning = 0  -- ensures reliable redshift measurements
+    AND s.z BETWEEN 0.1 AND 1  -- example redshift range
+"""
 
 
 if __name__ == "__main__":
     sql_cl = SQLCL()
-    df = sql_cl.query_database(GT1_DATA)
+    df = sql_cl.query_database(JOEL_QUERY)
     sql_cl.logger.info(f"Query returned {df.shape[0]} rows")
-    df.to_csv(PATH / "data/gt_1.csv")
-    sql_cl.logger.info(f"Data saved to {PATH / 'data/gt_1.csv'}")
+    df.to_csv(PATH / "data/represenative_data.csv")
+    sql_cl.logger.info(f"Data saved to {PATH / 'data/represenative_data.csv'}")
