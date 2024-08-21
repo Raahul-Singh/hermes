@@ -1,3 +1,5 @@
+import argparse
+
 import pandas as pd
 from sdss_access import Path
 
@@ -47,10 +49,18 @@ def add_filename(df):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv("test_run/data/initial_download.csv", index_col=0)
+    parser = argparse.ArgumentParser(
+        description="Generate URL to download fits and jpg files"
+    )
+    parser.add_argument(
+        "--data_path", type=str, default="test_run/data/initial_download.csv"
+    )
+    args = parser.parse_args()
+
+    df = pd.read_csv(args.data_path, index_col=0)
     for i in ["u", "g", "r", "i", "z"]:
         df = apply_fits_url_to_df(df, filter_val=i)
     # df = apply_jpeg_url_to_df(df)
     # df = add_filename(df)
-    df.to_csv("test_run/data/initial_download_updated.csv", index=False)
+    df.to_csv(f"{args.data_path[:-4]}_updated.csv")
     print(df.head())
