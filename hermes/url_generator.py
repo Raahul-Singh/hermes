@@ -42,7 +42,7 @@ def apply_jpeg_url_to_df(df, scale=0.396, height=40, width=40):
 
 
 def add_filename(df):
-    df["filename"] = df["fits_url"].apply(
+    df["filename"] = df["fits_url_u"].apply(
         lambda x: x.split("/")[-1][:-4]
     )  # remove .bz2
     return df
@@ -52,15 +52,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Generate URL to download fits and jpg files"
     )
-    parser.add_argument(
-        "--data_path", type=str, default="test_run/data/initial_download.csv"
-    )
+    parser.add_argument("--data_path", type=str, default="represenative_data.csv")
     args = parser.parse_args()
 
     df = pd.read_csv(args.data_path, index_col=0)
-    for i in ["u", "g", "r", "i", "z"]:
+    for i in ["u"]:  # , "g", "r", "i", "z"]:
         df = apply_fits_url_to_df(df, filter_val=i)
     # df = apply_jpeg_url_to_df(df)
-    # df = add_filename(df)
+    df = add_filename(df)
     df.to_csv(f"{args.data_path[:-4]}_updated.csv")
     print(df.head())
