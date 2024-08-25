@@ -95,7 +95,7 @@ WHERE
     AND s.z BETWEEN 1 AND 6  -- example redshift range
 """
 JOEL_QUERY = """
-SELECT TOP 100000
+SELECT
     p.objID,
     p.run,
     p.ra,
@@ -105,21 +105,27 @@ SELECT TOP 100000
     p.field,
     s.z,
     s.zErr,
-    s.rChi2
+    phz.z AS template_photo_z,
+    phz.zErr AS template_photo_zErr
 FROM
     PhotoObj AS p
 JOIN
     SpecObj AS s ON p.objID = s.bestObjID
+JOIN
+    Photoz AS phz ON p.objID = phz.objID
 WHERE
-    s.class_noqso = "GALAXY"
+    s.class_noqso = 'GALAXY'
     AND s.zWarning = 0  -- ensures reliable redshift measurements
     AND s.z BETWEEN 0.1 AND 1  -- example redshift range
+Order By
+    p.objID
 """
 
 
 if __name__ == "__main__":
     sql_cl = SQLCL()
     df = sql_cl.query_database(JOEL_QUERY)
+    breakpoint()
     sql_cl.logger.info(f"Query returned {df.shape[0]} rows")
     df.to_csv(PATH / "../../pls_work_data.csv")
     sql_cl.logger.info(f"Data saved to {PATH / '../../pls_work_data.csv'}")
