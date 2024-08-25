@@ -122,5 +122,4 @@ if __name__ == "__main__":
         ).split("/")[-1],
         axis=1,
     )
-    data.loc[1, "file_name"] = "frame-x-000000-1-0010.fits"
     save_data(data.head(), args.save_path, args.file_path)

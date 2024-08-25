@@ -14,3 +14,6 @@ dependencies = [
     "pandas",
     "sdss_access"
 ]
+
+[tool.setuptools.packages.find]
+exclude = ["ordered_100k/*"]
