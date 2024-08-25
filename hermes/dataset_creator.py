@@ -17,9 +17,13 @@ from tqdm import tqdm
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 # create file handler which logs even debug messages
-fh = logging.FileHandler("processing.log")
+fh = logging.FileHandler("info.log")
+er = logging.FileHandler("error.log")
 fh.setLevel(logging.INFO)
+er.setLevel(logging.ERROR)
 logger.addHandler(fh)
+logger.addHandler(er)
+import glob
 
 
 def get_grid(file_path, filename, ra, dec, shape=(40, 40)):
@@ -69,9 +73,18 @@ def get_grid(file_path, filename, ra, dec, shape=(40, 40)):
 def save_data(df, save_path, file_path):
     os.makedirs(f"{save_path}/X", exist_ok=True)
     os.makedirs(f"{save_path}/y", exist_ok=True)
+
+    all_files = [f.split("/")[-1] for f in glob.glob(f"{file_path}/frame-*.fits")]
     for i, row in tqdm(df.iterrows(), total=df.shape[0]):
+        files = []
+        for j in ["u", "g", "r", "i", "z"]:
+            files.append(row["file_name"].replace("frame-x-", f"frame-{j}-"))
+
+        if not all([f in all_files for f in files]):
+            logger.error(f"Files not found for {files}, skipping sample {i}")
+            continue
+
         obj_id = row["objID"]
-        # breakpoint()
         y = row[["z", "zErr", "template_photo_z", "template_photo_zErr"]].astype(
             np.float32
         )
@@ -80,23 +93,23 @@ def save_data(df, save_path, file_path):
             grid = get_grid(file_path, row["file_name"], row["ra"], row["dec"])
             np.save(f"{save_path}/X/{obj_id}.npy", grid)
             np.save(f"{save_path}/y/{obj_id}.npy", y.values)
+            logger.info(f"Sample {i} with {obj_id} Saved!")
         except Exception as e:
             logger.error(f"Error in Sample {i} with {obj_id}: {e}")
-        logger.info(f"Sample {i} with {obj_id} Saved!")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--save_path", type=str, default="processed_data")
     parser.add_argument(
-        "--data_path", type=str, default="ordered_100k/speed_test_data.csv"
+        "--data_path", type=str, default="ordered_100k/extra_csv/speed_test_data.csv"
     )
     parser.add_argument(
         "--file_path", type=str, default="ordered_100k/eboss/photoObj/frames/301/94/6"
     )
     args = parser.parse_args()
 
-    data = pd.read_csv(args.data_path)
+    data = pd.read_csv(args.data_path, index_col=0)
     sdss_path = Path(release="dr17")
     data["file_name"] = data.apply(
         lambda row: sdss_path.url(
@@ -109,5 +122,5 @@ if __name__ == "__main__":
         ).split("/")[-1],
         axis=1,
     )
-
-    save_data(data, args.save_path, args.file_path)
+    data.loc[1, "file_name"] = "frame-x-000000-1-0010.fits"
+    save_data(data.head(), args.save_path, args.file_path)
